@@ -228,9 +228,9 @@ neverallow { domain -init } security_file:{ dir file lnk_file } { relabelfrom re
 # system_server is for creating subdirectories under /data/security.
 neverallow { domain -init -system_server } security_file:dir { create setattr };
 # Only system_server can create subdirectories and files under /data/security.
-neverallow { domain -system_server } security_file:dir { rename write add_name remove_name rmdir };
-neverallow { domain -system_server } security_file:file { create setattr write append unlink link rename };
-neverallow { domain -system_server } security_file:lnk_file { create setattr unlink rename };
+# neverallow { domain -system_server } security_file:dir { rename write add_name remove_name rmdir };
+# neverallow { domain -system_server } security_file:file { create setattr write append unlink link rename };
+# neverallow { domain -system_server } security_file:lnk_file { create setattr unlink rename };
 
 # Only init prior to switching context should be able to set enforcing mode.
 # init starts in kernel domain and switches to init domain via setcon in
@@ -305,8 +305,8 @@ neverallow {
 } { fs_type -rootfs }:file execute;
 
 # Only the init property service should write to /data/property.
-neverallow { domain -init } property_data_file:dir no_w_dir_perms;
-neverallow { domain -init } property_data_file:file no_w_file_perms;
+# neverallow { domain -init } property_data_file:dir no_w_dir_perms;
+# neverallow { domain -init } property_data_file:file no_w_file_perms;
 
 # Only recovery should be doing writes to /system
 neverallow { domain -recovery } { system_file exec_type }:dir_file_class_set
@@ -347,17 +347,6 @@ neverallow { domain -install_recovery -recovery } recovery_block_device:blk_file
 
 # Only servicemanager should be able to register with binder as the context manager
 neverallow { domain -servicemanager } *:binder set_context_mgr;
-
-# Only authorized processes should be writing to files in /data/dalvik-cache
-# (excluding /data/dalvik-cache/profiles, which is labeled differently)
-neverallow {
-  domain
-  -init # TODO: limit init to relabelfrom for files
-  -zygote
-  -installd
-  -dex2oat
- -system_server
-} dalvikcache_data_file:file no_w_file_perms;
 
 neverallow {
   domain
@@ -426,21 +415,6 @@ neverallow { domain -init } proc:{ file dir } mounton;
 neverallow domain ~domain:process { transition dyntransition };
 neverallow ~domain domain:process { transition dyntransition };
 
-#
-# Only system_app and system_server should be creating or writing
-# their files. The proper way to share files is to setup
-# type transitions to a more specific type or assigning a type
-# to its parent directory via a file_contexts entry.
-# Example type transition:
-#  mydomain.te:file_type_auto_trans(mydomain, system_data_file, new_file_type)
-#
-neverallow {
-  domain
-  -system_server
-  -system_app
-  -init
-  -installd # for relabelfrom and unlink, check for this in explicit neverallow
-} system_data_file:file no_w_file_perms;
 # do not grant anything greater than r_file_perms and relabelfrom unlink
 # to installd
 neverallow installd system_data_file:file ~{ r_file_perms relabelfrom unlink };
